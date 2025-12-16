@@ -5,6 +5,13 @@ const asyncWrapper = require('../middleware/asyncWrapper')
 const bcrypt = require('bcrypt')
 const generateJWT = require('../utils/generateJWT')
 const { expression } = require('joi')
+const pickAllowedFields = require('../utils/allowedFields')
+
+exports.getAllUsers = asyncWrapper(async(req, res, next) =>{
+    const users = await User.find({}, {"__v": false, "password": false})
+    // res.json({"status": httpStatusText.SUCCESS, "data": {users}})
+    res.json({"status": httpStatusText.SUCCESS, "data":{users}})
+})
 
 exports.register = asyncWrapper(async(req, res, next)=>{
     const {firstName, lastName, username, email, password, role} = req.body
@@ -21,7 +28,7 @@ exports.register = asyncWrapper(async(req, res, next)=>{
     const hashedPassword = await bcrypt.hash(password, 10)
     const newUser = new User({firstName, lastName, username, email, password: hashedPassword, role})
     await newUser.save()
-    const token = generateJWT({id: newUser.id, email: newUser.email, username: newUser.username, role: newUser.role })
+    const token = await generateJWT({id:newUser.id.toString(), role: newUser.role})
     res.status(201).json({status: httpStatusText.SUCCESS,data: {newUser}, token:{token}})
 })
 
@@ -36,15 +43,26 @@ exports.login = asyncWrapper(async(req, res, next) =>{
     if(!hashedPassword)
         return next(serverError.create("Password incorrect", 400, httpStatusText.ERROR))
     if(user && hashedPassword){
-        const token = await generateJWT({_id:user.id, email: user.email, username: user.username, password: user.password, role: user.role})
+        const token = await generateJWT({id:user.id.toString(), role: user.role})
+        console.log(token)
         return res.status(202).json({status: httpStatusText.SUCCESS, data:{token}})
     }else{
         return next(serverError.create("Something went wrong", 500, httpsStatusText.ERROR))
     }
 })
 
-exports.getAllUsers = asyncWrapper(async(req, res, next) =>{
-    const users = await User.find({}, {"__v": false, "password": false})
-    // res.json({"status": httpStatusText.SUCCESS, "data": {users}})
-    res.json({"status": httpStatusText.SUCCESS, "data":{users}})
+exports.updateUserInfo = asyncWrapper(async(req, res, next) =>{
+    console.log("get in update info")
+    const userId = req.user._id || req.user.id
+    const allowedUpdates = ['firstName', 'lastName', 'username', 'email']
+
+    const updates = pickAllowedFields(req.body, allowedUpdates)
+    if(Object.keys(updates).length == 0)
+        return next(serverError.create("No updates provided", 400, httpStatusText.ERROR))
+
+    const updatedUser = await User.findByIdAndUpdate(userId,updates,{new: true,runValidators: true}).select('-password -role -__v');
+
+    if (!updatedUser) {
+        return res.status(404).json({status: httpStatusText.FAIL,message: 'User not found'});}
+    res.status(200).json({status: httpStatusText.SUCCESS,data: { user: updatedUser }});
 })

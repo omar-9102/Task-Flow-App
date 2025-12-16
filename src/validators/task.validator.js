@@ -26,7 +26,7 @@ const createTaskSchema = Joi.object({
 const updateTaskSchema = Joi.object({
     taskTitle: Joi.string().min(3).max(70).optional(),
     taskContent: Joi.string().min(1).max(300).optional(),
-    status: Joi.string().valid(taskStatus.COMPLETED, taskStatus.PENDING).optional,
+    status: Joi.string().valid(taskStatus.COMPLETED, taskStatus.PENDING).optional(),
     createdOn: Joi.date().optional()
 })
 
