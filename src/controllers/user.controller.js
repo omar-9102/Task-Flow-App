@@ -6,6 +6,9 @@ const bcrypt = require('bcrypt')
 const generateJWT = require('../utils/generateJWT')
 const { expression } = require('joi')
 const pickAllowedFields = require('../utils/allowedFields')
+const fs = require('node:fs')
+const path = require('path')
+
 
 exports.getAllUsers = asyncWrapper(async(req, res, next) =>{
     const users = await User.find({}, {"__v": false, "password": false})
@@ -27,6 +30,9 @@ exports.register = asyncWrapper(async(req, res, next)=>{
     }
     const hashedPassword = await bcrypt.hash(password, 10)
     const newUser = new User({firstName, lastName, username, email, password: hashedPassword, role})
+    if (req.file) {
+        newUser.avatar = req.file.path;
+    }
     await newUser.save()
     const token = await generateJWT({id:newUser.id.toString(), role: newUser.role})
     res.status(201).json({status: httpStatusText.SUCCESS,data: {newUser}, token:{token}})
@@ -55,8 +61,24 @@ exports.updateUserInfo = asyncWrapper(async(req, res, next) =>{
     console.log("get in update info")
     const userId = req.user._id || req.user.id
     const allowedUpdates = ['firstName', 'lastName', 'username', 'email']
-
     const updates = pickAllowedFields(req.body, allowedUpdates)
+// 2. Handle Avatar Update
+    if (req.file) {
+        // Find the user first to get the old avatar path
+        const user = await User.findById(userId);  
+        const fullPath = path.resolve(user.avatar);      
+        // Delete the old file from storage (if it's not the default one)
+        if (fs.existsSync(fullPath)) {
+            // Use fs.unlink to remove the physical file
+            fs.unlink(fullPath, (err) => {
+                if (err) console.error("Failed to delete old avatar:", err);
+            });
+        }else{
+            console.log("File not found at:", fullPath);
+        }
+        // Add the new path to the updates object
+        updates.avatar = req.file.path;
+    }
     if(Object.keys(updates).length == 0)
         return next(serverError.create("No updates provided", 400, httpStatusText.ERROR))
 

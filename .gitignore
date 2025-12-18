@@ -7,3 +7,6 @@
 # Logs and debug files
 npm-debug.log*
 *.log
+
+Two types of verifyToken.txt
+Using local caching in verifyToken and measuring it's speed.txt
