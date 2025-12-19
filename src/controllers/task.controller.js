@@ -21,18 +21,14 @@ exports.getMyTasks = asyncWrapper(async(req, res, next) =>{
 exports.getUserTasks = asyncWrapper(async (req, res, next) => {
     const userId = req.user._id;
     const status = (req.query && req.query.status) || (req.body && req.body.status);
-    // 1. Always start with the owner filter for security
     const filter = { owner: userId };
-    // 2. Add status to filter ONLY if it is valid
     const validStatuses = ['COMPLETED', 'PENDING'];   
     if (status) {
-        // Convert input to uppercase so "pending" or "PENDING" both work
         const upperStatus = status.toString().toUpperCase();
         if(!validStatuses.includes(upperStatus))
             return next(serverError.create('Enter a valid input' , 400, httpStatusText.ERROR))
     }
-    // 3. Execute query once
-    // If no status was provided, filter is just { owner: userId }, returning all.
+
     const tasks = await Task.find(filter);
     res.status(200).json({status: httpStatusText.SUCCESS,data: { tasks }, count: tasks.length});
 });
@@ -56,9 +52,6 @@ exports.updateTask = asyncWrapper(async(req, res, next) =>{
         const updates = {...req.body}
         if (req.files && req.files.length > 0) {
             const newFilePaths = req.files.map(file => file.path);   
-        // Option A: Append new files to the existing list ($push)
-        // Option B: Overwrite the whole list (updates.taskFiles = newFilePaths)
-        // Below we use Option A within the findByIdAndUpdate    
             updates.$push = { taskFiles: { $each: newFilePaths } };
     }
         const updatedTask = await Task.findByIdAndUpdate(taskId, updates, {new: true, runValidators: true})
