@@ -12,7 +12,6 @@ const path = require('path')
 
 exports.getAllUsers = asyncWrapper(async(req, res, next) =>{
     const users = await User.find({}, {"__v": false, "password": false})
-    // res.json({"status": httpStatusText.SUCCESS, "data": {users}})
     res.json({"status": httpStatusText.SUCCESS, "data":{users}})
 })
 
@@ -62,21 +61,16 @@ exports.updateUserInfo = asyncWrapper(async(req, res, next) =>{
     const userId = req.user._id || req.user.id
     const allowedUpdates = ['firstName', 'lastName', 'username', 'email']
     const updates = pickAllowedFields(req.body, allowedUpdates)
-// 2. Handle Avatar Update
     if (req.file) {
-        // Find the user first to get the old avatar path
         const user = await User.findById(userId);  
         const fullPath = path.resolve(user.avatar);      
-        // Delete the old file from storage (if it's not the default one)
         if (fs.existsSync(fullPath)) {
-            // Use fs.unlink to remove the physical file
             fs.unlink(fullPath, (err) => {
                 if (err) console.error("Failed to delete old avatar:", err);
             });
         }else{
             console.log("File not found at:", fullPath);
         }
-        // Add the new path to the updates object
         updates.avatar = req.file.path;
     }
     if(Object.keys(updates).length == 0)
