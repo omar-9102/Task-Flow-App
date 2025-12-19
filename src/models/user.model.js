@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: [userRules.USER, userRules.ADMIN],  // Permissible values
+        enum: [userRules.USER, userRules.ADMIN],
         default: userRules.USER 
     },
     avatar: {
