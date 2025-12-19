@@ -22,7 +22,6 @@ const verifyToken = async (req, res, next) =>{
         }else{
             user = await User.findById(userId).select('_id role');
             if (user) {
-                // Convert Mongoose document to a plain object before caching
                 const userDataToCache = {
                     _id: user._id,
                     role: user.role
