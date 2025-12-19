@@ -2,11 +2,9 @@ const mongoose = require('mongoose')
 const validator = require('validator')
 const {taskStatus} = require('../utils/taskStatus')
 
-// Define a formatter function for 'Africa/Cairo' time zone
 const egyptDateFormatter = (timestamp) => {
     if (!timestamp) return null;
 
-    // Options to achieve a format similar to "Dec 16, 2025" plus the time in Egypt
     const options = {
         year: 'numeric',
         month: 'short',
@@ -14,10 +12,9 @@ const egyptDateFormatter = (timestamp) => {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        timeZone: 'Africa/Cairo', // Specify Egypt time zone
-        hour12: false // Use 24-hour format
+        timeZone: 'Africa/Cairo', 
+        hour12: false 
     };
-    // Example locale 'en-GB' for DD/MM/YYYY style, or 'en-US' for the previous request's style
     return new Intl.DateTimeFormat('en-GB', options).format(timestamp); 
 };
 
@@ -36,10 +33,6 @@ const taskScheme = new mongoose.Schema({
         enum: [taskStatus.COMPLETED, taskStatus.PENDING],
         default: taskStatus.PENDING
         },
-    // createdOn:{
-    //     type: Date,
-    //     default: Date.now
-    // },
     owner:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
